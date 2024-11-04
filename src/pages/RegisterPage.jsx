@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { TextField, Button, Container, Typography } from "@mui/material";
-import { register } from "../services/AuthService"; // Экшн для регистрации
+import AuthService from "../services/AuthService";
 
 const RegisterPage = () => {
   const dispatch = useDispatch();
@@ -21,7 +21,7 @@ const RegisterPage = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    dispatch(register ({ email, password, role }))
+    AuthService.register({ email, password, role }) // Используем AuthService для вызова register
       .then(() => {
         navigate("/"); // После успешной регистрации перенаправляем на главную страницу
       })

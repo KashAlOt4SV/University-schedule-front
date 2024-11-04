@@ -1,51 +1,37 @@
-import React, { useState, useContext } from 'react';
-import { TextField, Button, Typography, Container } from '@mui/material';
-import { AuthContext } from '../../context/AuthContext.jsx';
-import { login } from '../../services/AuthService.jsx';
+// Login.jsx
+import React, { useState } from 'react';
+import AuthService from '../services/authService';
 
-// Компонент для авторизации
 const Login = () => {
-  const { login: loginUser } = useContext(AuthContext); // Получаем контекст авторизации
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-
-  // Обработка отправки формы
+  const [credentials, setCredentials] = useState({ email: '', password: '' });
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const data = await login({ email, password });
-      loginUser(data.token); // Сохраняем токен в контексте
-    } catch (err) {
-      setError(err.message);
+      await AuthService.login(credentials);
+      // Перенаправляем на страницу расписания после успешного входа
+      window.location.href = '/schedule';
+    } catch (error) {
+      console.error('Ошибка при авторизации', error);
     }
   };
 
   return (
-    <Container maxWidth="sm">
-      <Typography variant="h4" gutterBottom>Вход</Typography>
-      {error && <Typography color="error">{error}</Typography>}
-      <form onSubmit={handleSubmit}>
-        <TextField
-          label="Email"
-          fullWidth
-          margin="normal"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <TextField
-          label="Пароль"
-          fullWidth
-          margin="normal"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <Button type="submit" variant="contained" color="primary" fullWidth>
-          Войти
-        </Button>
-      </form>
-    </Container>
+    <form onSubmit={handleSubmit}>
+      <input
+        type="email"
+        placeholder="Email"
+        value={credentials.email}
+        onChange={(e) => setCredentials({ ...credentials, email: e.target.value })}
+      />
+      <input
+        type="password"
+        placeholder="Пароль"
+        value={credentials.password}
+        onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
+      />
+      <button type="submit">Войти</button>
+    </form>
   );
 };
 

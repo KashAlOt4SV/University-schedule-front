@@ -1,21 +1,27 @@
+// authService.js
 import axios from 'axios';
+import store from '../store'; // Импортируем store Redux
+import { setUserRole } from '../redux/slices/scheduleSlice'; // Импортируем экшен для установки роли
 
-// Регистрация пользователя
-export const register = async (userData) => {
-  try {
-    const response = await axios.post('http://localhost:5000/api/auth/register', userData);
-    return response.data;
-  } catch (err) {
-    throw new Error(err.response.data.message || 'Ошибка регистрации');
-  }
-};
+class AuthService {
+  async login(credentials) {
+    const response = await axios.post('/api/auth/login', credentials);
+    const { token, user } = response.data;
 
-// Авторизация пользователя
-export const login = async (credentials) => {
-  try {
-    const response = await axios.post('http://localhost:5000/api/auth/login', credentials);
+    // Сохраняем токен в localStorage
+    localStorage.setItem('token', token);
+
+    // Диспатчим роль пользователя в Redux
+    store.dispatch(setUserRole(user.role));
+
     return response.data;
-  } catch (err) {
-    throw new Error(err.response.data.message || 'Ошибка авторизации');
   }
-};
+
+  logout() {
+    // Удаляем токен из localStorage
+    localStorage.removeItem('token');
+    store.dispatch(setUserRole(null)); // Сбрасываем роль пользователя
+  }
+}
+
+export default new AuthService();

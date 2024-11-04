@@ -3,7 +3,7 @@
 import React, { useState } from "react"; // Импортируем React и useState
 import { useDispatch } from "react-redux"; // Импортируем useDispatch из react-redux
 import { useNavigate } from "react-router-dom"; // Импортируем useNavigate из react-router-dom
-import { login } from "../services/AuthService"; // Импортируем метод login из AuthService
+import AuthService from "../services/AuthService"
 import { Button, TextField, Typography } from "@mui/material"; // Импортируем компоненты Material-UI
 
 const LoginPage = () => {
@@ -17,7 +17,7 @@ const LoginPage = () => {
     e.preventDefault(); // Предотвращаем перезагрузку страницы
     try {
       // Вызываем метод login из AuthService с введенными данными
-      const { token, user } = await login({ email, password });
+      const { token, user } = await AuthService.login({ email, password });
       
       // Здесь вы можете добавить действие для сохранения токена и пользователя в Redux, если это необходимо
       // Например: dispatch(loginSuccess(user));

@@ -8,7 +8,7 @@ import { BrowserRouter } from "react-router-dom"; // Подключаем мар
 
 import "./index.scss"; // Импортируем глобальные стили
 import { ThemeProvider, createTheme } from "@mui/material"; // Импортируем тему для MUI
-import store from './store'; // Импортируем хранилище Redux
+import store from './store'; // Импортируем хранилище Redux тестовый коммит елки палки
 
 // Создаем кастомную тему MUI
 const theme = createTheme({
