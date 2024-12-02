@@ -9,7 +9,7 @@ const AcademicGroupsPage = () => {
   const [selectedStudent, setSelectedStudent] = useState('');
   const [groupList, setGroupList] = useState([]);  // Список групп
   const [studentsList, setStudentsList] = useState([]);  // Список студентов
-  const [students, setStudents] = useState([]);  // Студенты в группе
+  const [students, setStudents] = useState([]);  // Студенты в выбранной группе
   const [userRole, setRole] = useState(null);  // Роль пользователя
   const token = localStorage.getItem('token');
 
@@ -81,33 +81,32 @@ const AcademicGroupsPage = () => {
   };
 
   // Добавление студента в группу
-const handleAddStudentToGroup = async (groupId) => {
-  if (!selectedStudent) {
-    alert('Пожалуйста, выберите студента');
-    return;
-  }
+  const handleAddStudentToGroup = async (groupId) => {
+    if (!selectedStudent) {
+      alert('Пожалуйста, выберите студента');
+      return;
+    }
 
-  console.log(`Adding student with ID ${selectedStudent} to group with ID ${groupId}`);  // Логируем передаваемые данные
+    console.log(`Adding student with ID ${selectedStudent} to group with ID ${groupId}`);  // Логируем передаваемые данные
 
-  try {
-    await axios.post(`http://localhost:5000/api/groups/${groupId}/students/${selectedStudent}`, {}, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    alert('Студент добавлен в группу');
-    const response = await axios.get(`http://localhost:5000/api/groups/${groupId}/students`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    setStudents(response.data);
-  } catch (error) {
-    alert('Ошибка при добавлении студента в группу');
-    console.error('Error adding student to group:', error);
-  }
-};
-
+    try {
+      await axios.post(`http://localhost:5000/api/groups/${groupId}/students/${selectedStudent}`, {}, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      alert('Студент добавлен в группу');
+      const response = await axios.get(`http://localhost:5000/api/groups/${groupId}/students`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setStudents(response.data);
+    } catch (error) {
+      alert('Ошибка при добавлении студента в группу');
+      console.error('Error adding student to group:', error);
+    }
+  };
 
   // Удаление студента из группы
   const handleRemoveStudentFromGroup = async (groupId, studentId) => {
@@ -126,6 +125,49 @@ const handleAddStudentToGroup = async (groupId) => {
       setStudents(response.data);
     } catch (error) {
       alert('Ошибка при удалении студента из группы');
+      console.error('Error removing student from group:', error);
+    }
+  };
+
+  // Удаление группы
+  const handleRemoveGroup = async (groupId) => {
+    try {
+      await axios.delete(`http://localhost:5000/api/groups/${groupId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      alert('Группа удалена');
+      // Перезагружаем список групп
+      const response = await axios.get('http://localhost:5000/api/groups', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setGroupList(response.data);
+    } catch (error) {
+      alert('Ошибка при удалении группы');
+    }
+  };
+
+  // Редактирование группы
+  const handleEditGroup = async (groupId, newGroupName) => {
+    try {
+      await axios.put(`http://localhost:5000/api/groups/${groupId}`, { groupName: newGroupName }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      alert('Группа отредактирована');
+      // Перезагружаем список групп
+      const response = await axios.get('http://localhost:5000/api/groups', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setGroupList(response.data);
+    } catch (error) {
+      alert('Ошибка при редактировании группы');
     }
   };
 
@@ -152,7 +194,13 @@ const handleAddStudentToGroup = async (groupId) => {
           <TableBody>
             {groupList.map((group) => (
               <TableRow key={group.id}>
-                <TableCell>{group.groupName}</TableCell>  {/* Убедись, что правильно обращаешься к groupName */}
+                <TableCell>{group.groupName}</TableCell>  {/* Название группы */}
+                <TableCell>
+                  <Button variant="contained" color="primary" onClick={() => handleEditGroup(group.id, prompt('Введите новое название группы', group.groupName))}>Редактировать</Button>
+                </TableCell>
+                <TableCell>
+                  <Button variant="contained" color="secondary" onClick={() => handleRemoveGroup(group.id)}>Удалить группу</Button>
+                </TableCell>
                 <TableCell>
                   <FormControl fullWidth>
                     <InputLabel>Студент</InputLabel>
@@ -174,14 +222,11 @@ const handleAddStudentToGroup = async (groupId) => {
                   <Button variant="contained" onClick={() => handleAddStudentToGroup(group.id)}>Добавить студента</Button>
                 </TableCell>
                 <TableCell>
-                  <Button variant="contained" color="secondary" onClick={() => handleRemoveStudentFromGroup(group.id)}>Удалить группу</Button>
-                </TableCell>
-                <TableCell>
                   <Table>
                     <TableBody>
-                      {students.map((student) => (
+                      {group.Students?.map((student) => (
                         <TableRow key={student.id}>
-                          <TableCell>{student.name}</TableCell>
+                          <TableCell>{student.FIO}</TableCell> {/* ФИО студента */}
                           <TableCell>
                             <Button
                               variant="outlined"

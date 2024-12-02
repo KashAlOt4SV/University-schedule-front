@@ -20,7 +20,7 @@ const SchedulePage = () => {
   // Извлекаем данные пользователя из состояния auth
   const auth = useSelector((state) => state.auth); 
   const user = auth ? auth.user : null; // Защита от ошибки, если state.auth еще не загружен
-  const [user_role, setRole] = useState(null);
+  const [userRole, setRole] = useState(null);
 
   useEffect(() => {
     const userRole = getUserRole();
@@ -119,9 +119,8 @@ const SchedulePage = () => {
     <Container>
       <h2>Расписание</h2>
       <ScheduleTable schedule={schedule} onCellClick={handleCellClick} />
-
+      <ProtectedRoute requiredRole={userRole === "dispatcher" ? "dispatcher" : "admin"}>
       {isEditing && (
-        <ProtectedRoute requiredRole={user_role?.role === "dispatcher" ? "dispatcher" : "admin"}>
           <div>
             <h3>Редактирование пары</h3>
             <p>День: {selectedCell.day}, Время: {selectedCell.time}</p>
@@ -165,8 +164,10 @@ const SchedulePage = () => {
             <Button onClick={handleSave} variant="contained" color="primary">Сохранить</Button>
             <Button onClick={handleCancel} variant="contained" color="secondary">Отменить</Button>
           </div>
-        </ProtectedRoute>
       )}
+
+      </ProtectedRoute>
+      
     </Container>
   );
 };

@@ -67,7 +67,7 @@ const CreateUsersPage = () => {
                 <MenuItem value="dispatcher">Диспетчер</MenuItem>
                 <MenuItem value="academicResponsible">Ответственный за учебную часть</MenuItem>
                 <MenuItem value="departmentResponsible">Ответственный за учебную работу на кафедре</MenuItem>
-                <MenuItem value="teacher">Учитель</MenuItem>
+                <MenuItem value="teacher">Преподаватель</MenuItem>
                 <MenuItem value="student">Студент</MenuItem>
               </Select>
             </FormControl>
