@@ -9,12 +9,7 @@ const TeacherPage = () => {
   const [teacherName, setTeacherName] = useState('');
   const [discipline, setDiscipline] = useState('');
   const token = localStorage.getItem('token');
-  const [user_role, setRole] = useState(null);
-
-  useEffect(() => {
-    const userRole = getUserRole();
-    setRole(userRole);
-  }, []);
+  const [userRole, setRole] = useState(null);
 
 
   useEffect(() => {
@@ -46,9 +41,14 @@ const TeacherPage = () => {
         console.error("Error adding teacher", error);
       });
   };
+  
+  useEffect(() => {
+    const userRole = getUserRole();
+    setRole(userRole);
+  }, []);
 
   return (
-    <ProtectedRoute requiredRole={"departmentResponsible" ? user_role :"admin"}>
+    <ProtectedRoute requiredRole={userRole === "departmentResponsible" ? "departmentResponsible" :"admin"}>
     <Container>
       <h2>Преподаватели</h2>
       <TextField

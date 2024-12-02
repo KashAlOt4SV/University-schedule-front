@@ -1,4 +1,3 @@
-// components/ProtectedRoute.jsx
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import axios from 'axios';
@@ -21,30 +20,30 @@ const ProtectedRoute = ({ children, requiredRole }) => {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((response) => {
-        setRole(response.data.role);
+        setRole(response.data.role);  // Устанавливаем роль
         setLoading(false);
-        console.log("admin")
+        console.log("Role from server:", response.data.role);  // Логируем роль
       })
       .catch((err) => {
         setRole(null);
         setLoading(false);
-        console.log(err)
+        console.log('Error fetching user role:', err);  // Логируем ошибку
       });
   }, []);
 
   if (loading) {
-    return <div>Загрузка...</div>;
+    return <div>Загрузка...</div>;  // Показываем загрузку, пока не получим роль
   }
 
   if (!role) {
-    return <Navigate to="/login" />;
+    return <Navigate to="/login" />;  // Если роль не получена, редиректим на страницу входа
   }
 
   if (role !== requiredRole) {
-    return <div>У вас нет доступа к этой странице</div>;
+    return <div>У вас нет доступа к этой странице</div>;  // Если роль не соответствует, показываем ошибку доступа
   }
 
-  return children;
+  return children;  // Рендерим детей, если роль пользователя соответствует требуемой
 };
 
 export default ProtectedRoute;
