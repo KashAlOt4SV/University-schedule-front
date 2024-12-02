@@ -1,14 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Button, TextField, Container } from '@mui/material';
+import { Button, TextField, Container } from '@mui/material'; 
+import ProtectedRoute from '../components/ProtectedRoute'; 
+import getUserRole from '../components/jwt_decode';
 
 const TeacherPage = () => {
   const [teachers, setTeachers] = useState([]);
   const [teacherName, setTeacherName] = useState('');
   const [discipline, setDiscipline] = useState('');
+  const token = localStorage.getItem('token');
+  const [user_role, setRole] = useState(null);
 
   useEffect(() => {
-    axios.get('/api/teachers')
+    const userRole = getUserRole();
+    setRole(userRole);
+  }, []);
+
+
+  useEffect(() => {
+    axios.get('http://localhost:5000/api/teachers', {
+      headers: {
+        Authorization: `Bearer ${token}` // Отправляем токен в заголовке
+      }
+    })
       .then(response => {
         setTeachers(response.data);
       })
@@ -18,7 +32,11 @@ const TeacherPage = () => {
   }, []);
 
   const handleAddTeacher = () => {
-    axios.post('/api/teachers', { name: teacherName, discipline })
+    axios.post('http://localhost:5000/api/teachers', {
+      headers: {
+        Authorization: `Bearer ${token}` // Отправляем токен в заголовке
+      }
+    }, { name: teacherName, discipline })
       .then(response => {
         setTeachers([...teachers, response.data]);
         setTeacherName('');
@@ -30,6 +48,7 @@ const TeacherPage = () => {
   };
 
   return (
+    <ProtectedRoute requiredRole={"departmentResponsible" ? user_role :"admin"}>
     <Container>
       <h2>Преподаватели</h2>
       <TextField
@@ -51,6 +70,7 @@ const TeacherPage = () => {
         ))}
       </ul>
     </Container>
+    </ProtectedRoute>
   );
 };
 

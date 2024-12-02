@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Container, Button, TextField, Grid, Table, TableBody, TableCell, TableRow, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import ProtectedRoute from '../components/ProtectedRoute'; 
+import getUserRole from '../components/jwt_decode';
 
 const AcademicGroupsPage = () => {
   const [groupName, setGroupName] = useState('');
@@ -9,18 +11,28 @@ const AcademicGroupsPage = () => {
   const [selectedStudent, setSelectedStudent] = useState('');
   const [groupList, setGroupList] = useState([]);
   const [studentsList, setStudentsList] = useState([]);
+  const token = localStorage.getItem('token');
 
   useEffect(() => {
     // Загрузим группы и студентов из базы данных
-    axios.get('/api/groups')
+    axios.get('http://localhost:5000/api/groups', {
+      headers: {
+        Authorization: `Bearer ${token}` // Отправляем токен в заголовке
+      }
+    })
       .then(response => {
         setGroupList(response.data);
       })
       .catch(error => {
         console.error("Ошибка при загрузке групп:", error);
       });
+  
 
-    axios.get('/api/students')
+    axios.get('http://localhost:5000/api/students', {
+      headers: {
+        Authorization: `Bearer ${token}` // Отправляем токен в заголовке
+      }
+    })
       .then(response => {
         setStudentsList(response.data);
       })
@@ -29,13 +41,24 @@ const AcademicGroupsPage = () => {
       });
   }, []);
 
+  const [user_role, setRole] = useState(null);
+
+  useEffect(() => {
+    const userRole = getUserRole();
+    setRole(userRole);
+  }, []);
+
   const handleGroupSubmit = async () => {
     try {
-      await axios.post('/api/groups', { name: groupName });
+      await axios.post('http://localhost:5000/api/groups', { name: groupName }, {
+        headers: {
+          Authorization: `Bearer ${token}` // Отправляем токен в заголовке
+        }
+      });
       alert('Группа успешно добавлена');
       setGroupName('');
       // Перезагружаем список групп
-      const response = await axios.get('/api/groups');
+      const response = await axios.get('http://localhost:5000/api/groups');
       setGroupList(response.data);
     } catch (error) {
       alert('Ошибка при добавлении группы');
@@ -44,10 +67,18 @@ const AcademicGroupsPage = () => {
 
   const handleAddStudentToGroup = async (groupId) => {
     try {
-      await axios.post(`/api/groups/${groupId}/students`, { studentId: selectedStudent });
+      await axios.post(`http://localhost:5000/api/groups/${groupId}/students`, { studentId: selectedStudent }, {
+        headers: {
+          Authorization: `Bearer ${token}` // Отправляем токен в заголовке
+        }
+      });
       alert('Студент добавлен в группу');
       // Перезагружаем список студентов для группы
-      const response = await axios.get(`/api/groups/${groupId}/students`);
+      const response = await axios.get(`http://localhost:5000/api/groups/${groupId}/students`, {
+        headers: {
+          Authorization: `Bearer ${token}` // Отправляем токен в заголовке
+        }
+      });
       setStudents(response.data);
     } catch (error) {
       alert('Ошибка при добавлении студента в группу');
@@ -56,18 +87,28 @@ const AcademicGroupsPage = () => {
 
   const handleRemoveStudentFromGroup = async (groupId, studentId) => {
     try {
-      await axios.delete(`/api/groups/${groupId}/students/${studentId}`);
+      await axios.delete(`http://localhost:5000/api/groups/${groupId}/students/${studentId}`, {
+        headers: {
+          Authorization: `Bearer ${token}` // Отправляем токен в заголовке
+        }
+      });
       alert('Студент удален из группы');
       // Перезагружаем список студентов для группы
-      const response = await axios.get(`/api/groups/${groupId}/students`);
+      const response = await axios.get(`http://localhost:5000/api/groups/${groupId}/students`, {
+        headers: {
+          Authorization: `Bearer ${token}` // Отправляем токен в заголовке
+        }
+      });
       setStudents(response.data);
     } catch (error) {
       alert('Ошибка при удалении студента из группы');
     }
   };
 
+
   return (
-    <Container>
+    <ProtectedRoute requiredRole={"academicResponsible" ? user_role:"admin"}>
+        <Container>
       <h2>Управление группами</h2>
       <Grid container spacing={2}>
         <Grid item xs={12}>
@@ -133,6 +174,7 @@ const AcademicGroupsPage = () => {
         </TableBody>
       </Table>
     </Container>
+    </ProtectedRoute>
   );
 };
 

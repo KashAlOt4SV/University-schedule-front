@@ -1,21 +1,22 @@
 // LoginPage.jsx
 import React, { useState } from 'react';
 import { TextField, Button, Container, Typography, Grid } from '@mui/material';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
-  const history = useHistory();
+  const history = useNavigate();
 
   const handleLogin = async () => {
     try {
-      const response = await axios.post('/api/auth/login', { email, password });
+      const response = await axios.post('http://localhost:5000/api/auth/login', { email, password });
       localStorage.setItem('token', response.data.token); // Сохраняем токен в localStorage
-      const role = response.data.role; // Предполагаем, что сервер возвращает роль пользователя
-
+      const role = response.data.role;
+  
       // Редирект в зависимости от роли
       if (role === 'admin') {
         history.push('/admin');
@@ -27,7 +28,11 @@ const LoginPage = () => {
         history.push('/lecturer');
       }
     } catch (error) {
-      setErrorMessage('Неверный логин или пароль');
+      if (error.response && error.response.status === 400) {
+        setErrorMessage('Неверный логин или пароль');
+      } else if (error.response && error.response.status === 500) {
+        setErrorMessage('Ошибка сервера: 500');
+      } else {setErrorMessage("Вы успешно авторизированы!")}
     }
   };
 
