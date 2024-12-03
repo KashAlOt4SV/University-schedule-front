@@ -1,6 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Button, Container, Table, TableBody, TableCell, TableRow, MenuItem, Select, FormControl, InputLabel, TextField, Snackbar } from '@mui/material';
+import {
+  Button,
+  Container,
+  Table,
+  TableBody,
+  TableCell,
+  TableRow,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel,
+  TextField,
+  Snackbar
+} from '@mui/material';
 import ProtectedRoute from '../components/ProtectedRoute';
 import getUserRole from '../components/jwt_decode';
 
@@ -48,7 +61,9 @@ const TeacherPage = () => {
   const handleEditTeacher = (id) => {
     const teacher = teachers.find(t => t.id === id);
     setTeacherName(teacher.FIO);  // Устанавливаем текущее ФИО для редактирования
-    setSelectedDisciplines(teacher.Disciplines || []);  // Устанавливаем дисциплины для редактирования
+
+    // Преобразуем строку дисциплин в массив и устанавливаем для редактирования
+    setSelectedDisciplines(teacher.Disciplines ? teacher.Disciplines.split(', ') : []);
     setEditingTeacherId(id);  // Устанавливаем ID редактируемого преподавателя
   };
 
@@ -60,10 +75,10 @@ const TeacherPage = () => {
       return;
     }
 
-    // Отправляем обновленные данные на сервер
+    // Отправляем обновленные данные на сервер, дисциплины в виде строки
     axios.put(`http://localhost:5000/api/teachers/${editingTeacherId}`, {
       fio: teacherName,  // Обновленное ФИО
-      disciplines: selectedDisciplines  // Обновленные дисциплины
+      disciplines: selectedDisciplines.join(', ')  // Обновленные дисциплины как строка
     }, {
       headers: { Authorization: `Bearer ${token}` }
     })
@@ -124,8 +139,8 @@ const TeacherPage = () => {
               <TableRow key={teacher.id}>
                 <TableCell>{teacher.FIO}</TableCell>
                 <TableCell>
-                  {teacher.Disciplines && Array.isArray(teacher.Disciplines)
-                    ? teacher.Disciplines.join(', ')
+                  {teacher.Disciplines && teacher.Disciplines.length > 0
+                    ? teacher.Disciplines.split(', ').join(', ')  // Отображаем дисциплины как строку
                     : 'Нет дисциплин'}
                 </TableCell>
                 <TableCell>

@@ -1,200 +1,252 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Container, Button, TextField, Grid, Table, TableBody, TableCell, TableRow, FormControl, InputLabel, Select, MenuItem, Typography } from '@mui/material';
+import {
+  Container,
+  Button,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Snackbar,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle
+} from '@mui/material';
+
 import ProtectedRoute from '../components/ProtectedRoute';
 import getUserRole from '../components/jwt_decode';
 
-const AcademicGroupsPage = () => {
-  const [groupName, setGroupName] = useState('');
-  const [selectedStudent, setSelectedStudent] = useState('');
-  const [groupList, setGroupList] = useState([]);  // Список групп
-  const [studentsList, setStudentsList] = useState([]);  // Список студентов
-  const [students, setStudents] = useState([]);  // Студенты в группе
-  const [userRole, setRole] = useState(null);  // Роль пользователя
-  const token = localStorage.getItem('token');
+const DisciplinesPage = () => {
+  const [disciplines, setDisciplines] = useState([]);
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [classTypes, setClassTypes] = useState(['Лекция', 'Практическое занятие', 'Лабораторная работа']);
+  const [selectedClassTypes, setSelectedClassTypes] = useState([]);  // Это должно быть состояние для выбранных типов
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedDiscipline, setSelectedDiscipline] = useState(null);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarType, setSnackbarType] = useState('success');
+  const [openSnackbar, setOpenSnackbar] = useState(false);
+  const [userRole, setRole] = useState(null);
 
-  // Получение роли пользователя
   useEffect(() => {
-    const userRole = getUserRole();  // Получаем роль пользователя из JWT
+    const userRole = getUserRole();
     setRole(userRole);
   }, []);
 
-  // Загружаем данные с бэкенда
+
+  // Загружаем дисциплины при монтировании компонента
   useEffect(() => {
-    // Загружаем группы из БД
-    axios.get('http://localhost:5000/api/groups', {
+    const token = localStorage.getItem('token');
+    axios.get('http://localhost:5000/api/disciplines', {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     })
-      .then(response => {
-        console.log('Groups:', response.data);  // Логируем группы для отладки
-        setGroupList(response.data);
-      })
-      .catch(error => {
-        console.error("Ошибка при загрузке групп:", error);
-      });
+    .then((response) => {
+      setDisciplines(response.data);
+    })
+    .catch((error) => {
+      console.error('Error fetching disciplines', error);
+    });
+  }, []);
 
-    // Загружаем студентов из БД
-    axios.get('http://localhost:5000/api/students', {
+  // Обработчик для добавления новой дисциплины
+  const handleAddDiscipline = () => {
+    const token = localStorage.getItem('token');
+    axios.post('http://localhost:5000/api/disciplines', {
+      name,
+      classTypes: selectedClassTypes,
+      description
+    }, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     })
-      .then(response => {
-        console.log('Students:', response.data);  // Логируем студентов для отладки
-        setStudentsList(response.data);
-      })
-      .catch(error => {
-        console.error("Ошибка при загрузке студентов:", error);
-      });
-  }, [token]);
-
-  // Создание группы
-  const handleGroupSubmit = async () => {
-    if (!groupName) {
-      alert('Пожалуйста, введите название группы');
-      return;
-    }
-
-    console.log('Creating group with name:', groupName);  // Логируем название группы
-
-    try {
-      await axios.post('http://localhost:5000/api/groups', { name: groupName }, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      alert('Группа успешно добавлена');
-      setGroupName('');
-      // Перезагружаем список групп
-      const response = await axios.get('http://localhost:5000/api/groups', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      setGroupList(response.data);
-    } catch (error) {
-      console.error('Ошибка при добавлении группы:', error);  // Логируем ошибку
-      alert('Ошибка при добавлении группы');
-    }
+    .then((response) => {
+      setDisciplines([...disciplines, response.data]);
+      setSnackbarMessage('Дисциплина успешно добавлена');
+      setSnackbarType('success');
+      setOpenSnackbar(true);
+      setDialogOpen(false);
+      resetForm();  // Сбросим форму после добавления
+    })
+    .catch((error) => {
+      setSnackbarMessage('Ошибка при добавлении дисциплины');
+      setSnackbarType('error');
+      setOpenSnackbar(true);
+      console.error('Error adding discipline', error);
+    });
   };
 
-  // Добавление студента в группу
-  const handleAddStudentToGroup = async (groupId) => {
-    if (!selectedStudent) {
-      alert('Пожалуйста, выберите студента');
-      return;
-    }
-
-    try {
-      await axios.post(`http://localhost:5000/api/groups/${groupId}/students/${selectedStudent}`, {}, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      alert('Студент добавлен в группу');
-      const response = await axios.get(`http://localhost:5000/api/groups/${groupId}/students`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      setStudents(response.data);
-    } catch (error) {
-      alert('Ошибка при добавлении студента в группу');
-    }
+  // Обработчик для редактирования дисциплины
+  const handleEditDiscipline = () => {
+    const token = localStorage.getItem('token');
+    axios.put(`http://localhost:5000/api/disciplines/${selectedDiscipline.id}`, {
+      name,
+      classTypes: selectedClassTypes,
+      description
+    }, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+    .then((response) => {
+      const updatedDisciplines = disciplines.map(discipline =>
+        discipline.id === selectedDiscipline.id ? response.data : discipline
+      );
+      setDisciplines(updatedDisciplines);
+      setSnackbarMessage('Дисциплина успешно обновлена');
+      setSnackbarType('success');
+      setOpenSnackbar(true);
+      setDialogOpen(false);
+      resetForm();  // Сбросим форму после редактирования
+    })
+    .catch((error) => {
+      setSnackbarMessage('Ошибка при редактировании дисциплины');
+      setSnackbarType('error');
+      setOpenSnackbar(true);
+      console.error('Error updating discipline', error);
+    });
   };
 
-  // Удаление студента из группы
-  const handleRemoveStudentFromGroup = async (groupId, studentId) => {
-    try {
-      await axios.delete(`http://localhost:5000/api/groups/${groupId}/students/${studentId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      alert('Студент удален из группы');
-      const response = await axios.get(`http://localhost:5000/api/groups/${groupId}/students`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      setStudents(response.data);
-    } catch (error) {
-      alert('Ошибка при удалении студента из группы');
-    }
+  // Обработчик для открытия диалога редактирования
+  const handleEditDialogOpen = (discipline) => {
+    setSelectedDiscipline(discipline);
+    setName(discipline.name);
+    setDescription(discipline.description || '');
+    setSelectedClassTypes(discipline.classTypes || []);  // Инициализируем выбранные типы
+    setDialogOpen(true);
+  };
+
+  // Обработчик для удаления дисциплины
+  const handleDeleteDiscipline = (id) => {
+    const token = localStorage.getItem('token');
+    axios.delete(`http://localhost:5000/api/disciplines/${id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+    .then(() => {
+      setDisciplines(disciplines.filter(discipline => discipline.id !== id));
+      setSnackbarMessage('Дисциплина удалена');
+      setSnackbarType('success');
+      setOpenSnackbar(true);
+    })
+    .catch((error) => {
+      setSnackbarMessage('Ошибка при удалении дисциплины');
+      setSnackbarType('error');
+      setOpenSnackbar(true);
+      console.error('Error deleting discipline', error);
+    });
+  };
+
+  // Сбросить форму
+  const resetForm = () => {
+    setName('');
+    setDescription('');
+    setSelectedClassTypes([]);
+    setSelectedDiscipline(null);
+  };
+
+  const handleDialogClose = () => {
+    setDialogOpen(false);
+    resetForm();
   };
 
   return (
-    <ProtectedRoute requiredRole={userRole === "academicResponsible" || userRole === "admin"}>
-      <Container>
-        <Typography variant="h4" gutterBottom>Управление группами</Typography>
-        <Grid container spacing={2}>
-          <Grid item xs={12}>
-            <TextField
-              label="Название группы"
-              fullWidth
-              value={groupName}
-              onChange={(e) => setGroupName(e.target.value)}
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <Button variant="contained" onClick={handleGroupSubmit}>Добавить группу</Button>
-          </Grid>
-        </Grid>
+    <Container>
+      <ProtectedRoute requiredRole={userRole === "academicResponsible" ? "academicResponsible" : "admin"}>
+      <h2>Дисциплины</h2>
+      <Button variant="contained" color="primary" onClick={() => setDialogOpen(true)}>
+        Добавить дисциплину
+      </Button>
 
-        <Typography variant="h5" gutterBottom>Список групп</Typography>
-        <Table>
-          <TableBody>
-            {groupList.map((group) => (
-              <TableRow key={group.id}>
-                <TableCell>{group.groupName}</TableCell>  {/* Убедись, что правильно обращаешься к groupName */}
-                <TableCell>
-                  <FormControl fullWidth>
-                    <InputLabel>Студент</InputLabel>
-                    <Select
-                      value={selectedStudent}
-                      onChange={(e) => setSelectedStudent(e.target.value)}
-                    >
-                      {studentsList.map((student) => (
-                        <MenuItem key={student.id} value={student.id}>{student.name}</MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </TableCell>
-                <TableCell>
-                  <Button variant="contained" onClick={() => handleAddStudentToGroup(group.id)}>Добавить студента</Button>
-                </TableCell>
-                <TableCell>
-                  <Button variant="contained" color="secondary" onClick={() => handleRemoveStudentFromGroup(group.id)}>Удалить группу</Button>
-                </TableCell>
-                <TableCell>
-                  <Table>
-                    <TableBody>
-                      {students.map((student) => (
-                        <TableRow key={student.id}>
-                          <TableCell>{student.name}</TableCell>
-                          <TableCell>
-                            <Button
-                              variant="outlined"
-                              color="secondary"
-                              onClick={() => handleRemoveStudentFromGroup(group.id, student.id)}
-                            >
-                              Удалить
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </Container>
-    </ProtectedRoute>
+      {/* Список дисциплин */}
+      <div>
+        {disciplines.map((discipline) => (
+          <div key={discipline.id}>
+            <h3>{discipline.name}</h3>
+            <p>{discipline.description || 'Описание не указано'}</p>
+            <p>Типы занятий: {discipline.classTypes.join(', ')}</p>
+            <Button
+              variant="outlined"
+              color="primary"
+              onClick={() => handleEditDialogOpen(discipline)}
+            >
+              Редактировать
+            </Button>
+            <Button
+              variant="outlined"
+              color="secondary"
+              onClick={() => handleDeleteDiscipline(discipline.id)}
+              style={{ marginLeft: '10px' }}
+            >
+              Удалить
+            </Button>
+          </div>
+        ))}
+      </div>
+
+      {/* Snackbar уведомления */}
+      <Snackbar
+        open={openSnackbar}
+        autoHideDuration={6000}
+        onClose={() => setOpenSnackbar(false)}
+        message={snackbarMessage}
+        severity={snackbarType}
+      />
+
+      {/* Диалоговое окно для добавления/редактирования дисциплины */}
+      <Dialog open={dialogOpen} onClose={handleDialogClose}>
+        <DialogTitle>{selectedDiscipline ? 'Редактировать дисциплину' : 'Добавить дисциплину'}</DialogTitle>
+        <DialogContent>
+          <TextField
+            label="Название дисциплины"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            fullWidth
+            style={{ marginBottom: '7px' }}
+          />
+          <TextField
+            label="Описание"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            fullWidth
+            style={{ marginBottom: '7px' }}
+          />
+
+          <FormControl fullWidth>
+            <InputLabel>Типы занятий</InputLabel>
+            <Select
+              multiple
+              value={selectedClassTypes}
+              onChange={(e) => setSelectedClassTypes(e.target.value)}
+              displayEmpty
+              style={{ marginBottom: '7px' }}
+              renderValue={(selected) => selected.join(', ')}
+            >
+              {classTypes.map((type, index) => (
+                <MenuItem key={index} value={type}>{type}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDialogClose} color="secondary">Отменить</Button>
+          <Button
+            onClick={selectedDiscipline ? handleEditDiscipline : handleAddDiscipline}
+            color="primary"
+          >
+            {selectedDiscipline ? 'Сохранить' : 'Добавить'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+      </ProtectedRoute>
+    </Container>
   );
 };
 
-export default AcademicGroupsPage;
+export default DisciplinesPage;

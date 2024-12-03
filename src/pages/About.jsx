@@ -6,12 +6,10 @@ import ProtectedRoute from '../components/ProtectedRoute';
 const About = () => {
   
   return (
-    <ProtectedRoute requiredRole="admin">
-    <div>
+    <div style={{ marginLeft: '300px',marginTop: '30px' }}>
       <h1>О нас</h1>
       <p>Сайт написан по теме №22. Разработан Хохловой Елизаветой, Григораш Максимом, Кашаповой Ольгой, а также Шайкиным Ашотом.</p>
     </div>
-    </ProtectedRoute>
   );
 };
 
