@@ -88,22 +88,13 @@ const SchedulePage = () => {
     const scheduleItem = schedule.find(
       (item) => item.dayOfWeek === day && item.timeSlot === time
     );
-
-    console.log(scheduleItem)
-    
   
     if (scheduleItem) {
-      // Если такой элемент найден, заполняем данные
-      const teacherIndex = teachers.findIndex(teacher => teacher.FIO === scheduleItem.teacher)
-      const groupIndex = groups.findIndex(group => group.groupName === scheduleItem.groupName)
-      const disciplineIndex = disciplines.findIndex(discipline => discipline.name === scheduleItem.discipline)
       
       setSelectedScheduleTeacher(scheduleItem.teacherId);
       setSelectedScheduleGroup(scheduleItem.groupId);
       setSelectedDiscipline(scheduleItem.disciplineId);
       setSelectedClassType((scheduleItem.classType) ? scheduleItem.classType : null)
-
-      console.log(teacherIndex, groupIndex, disciplineIndex)
     } else {
         // Если элемента нет, очищаем поля
         setSelectedScheduleGroup('');
@@ -117,13 +108,8 @@ const SchedulePage = () => {
 
   useEffect(() => {
     // Это будет срабатывать каждый раз, когда selectedScheduleTeacher, selectedScheduleGroup или selectedDiscipline изменяются
-    console.log("Selected Teacher:", selectedScheduleTeacher);
-    console.log("Selected Group:", selectedScheduleGroup);
-    console.log("Selected Discipline:", selectedDiscipline);
-    console.log("Selected ClassType:", selectedClassType);
-  
-    if (selectedScheduleTeacher) {
-      const teacher = teachers.find(t => t.id === selectedScheduleTeacher);
+    if (selectedScheduleTeacher || selectedTeacher) {
+      const teacher = teachers.find(t => t.id === (selectedTeacher ? selectedTeacher : selectedScheduleTeacher));
       if (teacher && teacher.Disciplines) {
         // Здесь мы получаем массив дисциплин по ID
         const teacherDisciplinesData = teacher.Disciplines.map(disciplineId => 
@@ -134,10 +120,9 @@ const SchedulePage = () => {
     } else {
       setTeacherDisciplines(disciplines); // Если преподаватель не выбран, показываем все дисциплины
     }
-  },  [selectedScheduleTeacher, selectedScheduleGroup, selectedDiscipline, teachers, disciplines]); // Убираем лишние зависимости
+  },  [selectedScheduleTeacher, selectedScheduleGroup, selectedDiscipline, teachers, disciplines, selectedTeacher]); // Убираем лишние зависимости
 
   useEffect(() => {
-    console.log("Updated Teacher Disciplines:", teacherDisciplines);
   }, [teacherDisciplines]); // Логируем состояние teacherDisciplines после его обновления
 
   const handleSave = () => {
@@ -147,28 +132,26 @@ const SchedulePage = () => {
       setSnackbarOpen(true);
       return;
     }
-    
-
+  
     const scheduleData = {
       dayOfWeek: selectedCell.day,
       timeSlot: selectedCell.time,
       groupId: selectedGroup ? selectedGroup : selectedScheduleGroup,
       disciplineId: selectedDiscipline,
-      teacherId: selectedTeacher ? selectedTeacher: selectedScheduleTeacher,
+      teacherId: selectedTeacher ? selectedTeacher : selectedScheduleTeacher,
       classType: selectedClassType,
     };
-
-    console.log(scheduleData)
-
+  
     if (selectedCell.id) {
+      // Обновление существующего расписания
       axios.put(`http://localhost:5000/api/schedule/${selectedCell.id}`, scheduleData, {
         headers: { Authorization: `Bearer ${token}` },
       })
-        .then(response => {
-          const updatedSchedule = schedule.map(item =>
+        .then((response) => {
+          // Обновляем расписание сразу в состоянии
+          setSchedule(schedule.map(item =>
             item.id === response.data.id ? response.data : item
-          );
-          setSchedule(updatedSchedule);
+          ));
           setScheduleDialogOpen(false);
           setSnackbarMessage('Расписание успешно обновлено!');
           setSnackbarType('success');
@@ -180,23 +163,32 @@ const SchedulePage = () => {
           setSnackbarOpen(true);
         });
     } else {
+      // Добавление нового расписания
       axios.post('http://localhost:5000/api/schedule', scheduleData, {
         headers: { Authorization: `Bearer ${token}` },
       })
         .then(response => {
-          setSchedule([...schedule, response.data]);
+          // Добавляем новое расписание в состояние
+          setSchedule(prevSchedule => [...prevSchedule, response.data]);
           setScheduleDialogOpen(false);
           setSnackbarMessage('Расписание успешно добавлено!');
           setSnackbarType('success');
           setSnackbarOpen(true);
         })
         .catch(error => {
-          setSnackbarMessage(error.response && error.response.status === 400 ? error.response.data.message || 'Ошибка при обновлении расписания.' : 'Ошибка при обновлении расписания.');
+          setSnackbarMessage(error.response && error.response.status === 400 ? error.response.data.message || 'Ошибка при добавлении расписания.' : 'Ошибка при добавлении расписания.');
           setSnackbarType('error');
           setSnackbarOpen(true);
         });
     }
   };
+
+  useEffect(() => {
+    // Отслеживаем изменения в состоянии schedule и реагируем на них
+    console.log('Updated schedule:', schedule);
+  }, [schedule]);
+  
+  
 
   const handleCancel = () => {
     setDialogOpen(false);
@@ -223,7 +215,6 @@ const SchedulePage = () => {
   };
 
   const handleDelete = () => {
-    console.log("Delete button clicked") // Проверка, срабатывает ли кнопка
     const scheduleToDelete = schedule.find(item => 
       selectedScheduleGroup &&
       selectedDiscipline &&
@@ -245,10 +236,9 @@ const SchedulePage = () => {
         }
       })
       .then(() => {
-        console.log("Delete response:", selectedScheduleGroup,selectedDiscipline,selectedTeacher,selectedCell.time,selectedCell.day,selectedClassType);
+        // Убираем удаленную запись из состояния
         setSchedule(schedule.filter(item => item.id !== scheduleToDelete.id));
         setDeleteDialogOpen(false);  // Закрытие модального окна
-        console.log("Modal closed after delete");  // Проверка, закрывается ли окно
         setSnackbarMessage('Запись успешно удалена!');
         setSnackbarType('success');
         setSnackbarOpen(true);
@@ -260,7 +250,7 @@ const SchedulePage = () => {
       });
     }
   };
-
+  
   return (
     <Container>
       <h2>Расписание</h2>

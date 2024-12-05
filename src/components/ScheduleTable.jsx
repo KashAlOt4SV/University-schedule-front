@@ -18,6 +18,7 @@ const ScheduleTable = ({ schedule, onCellClick, userRole }) => {
     'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'
   ]);
 
+
   // Для редактирования расписания
   const [selectedCell, setSelectedCell] = useState(null);
   const [selectedGroup, setSelectedGroup] = useState('');
@@ -39,14 +40,6 @@ const ScheduleTable = ({ schedule, onCellClick, userRole }) => {
       default:
         return { padding: '10px', textAlign: 'center' };
     }
-  };
-
-  // Проверяем, заняты ли преподаватель и группа в выбранной ячейке
-  const isSlotOccupied = (day, time, groupId, teacherId, classType) => {
-    return schedule.some((entry) => 
-      entry.dayOfWeek === day && entry.timeSlot === time && 
-      (entry.groupId === groupId || entry.teacherId === teacherId) && entry.classType===classType
-    );
   };
 
   return (
