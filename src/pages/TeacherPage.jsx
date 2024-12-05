@@ -18,20 +18,20 @@ import ProtectedRoute from '../components/ProtectedRoute';
 import getUserRole from '../components/jwt_decode';
 
 const TeacherPage = () => {
-  const [teachers, setTeachers] = useState([]);
-  const [selectedDisciplines, setSelectedDisciplines] = useState([]);
-  const [allDisciplines, setAllDisciplines] = useState([]);
-  const [editingTeacherId, setEditingTeacherId] = useState(null);
-  const [teacherName, setTeacherName] = useState(''); // Для редактирования ФИО
-  const [openSnackbar, setOpenSnackbar] = useState(false); // Для Snackbar
-  const [snackbarMessage, setSnackbarMessage] = useState('');
-  const [snackbarType, setSnackbarType] = useState('success');
-  const token = localStorage.getItem('token');
-  const [userRole, setRole] = useState(null);
+  const [teachers, setTeachers] = useState([]);  // Список преподавателей
+  const [selectedDisciplines, setSelectedDisciplines] = useState([]);  // Выбранные дисциплины для редактирования
+  const [allDisciplines, setAllDisciplines] = useState([]);  // Все дисциплины
+  const [editingTeacherId, setEditingTeacherId] = useState(null);  // ID редактируемого преподавателя
+  const [teacherName, setTeacherName] = useState('');  // ФИО преподавателя
+  const [openSnackbar, setOpenSnackbar] = useState(false);  // Открытие уведомлений
+  const [snackbarMessage, setSnackbarMessage] = useState('');  // Сообщение уведомления
+  const [snackbarType, setSnackbarType] = useState('success');  // Тип уведомления (success, error)
+  const token = localStorage.getItem('token');  // Токен пользователя из localStorage
+  const [userRole, setRole] = useState(null);  // Роль пользователя
 
   useEffect(() => {
     const userRole = getUserRole();
-    setRole(userRole);
+    setRole(userRole);  // Устанавливаем роль пользователя
   }, []);
 
   useEffect(() => {
@@ -40,7 +40,14 @@ const TeacherPage = () => {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(response => {
-        setTeachers(response.data);
+        console.log('Received teachers data:', response.data); // Логирование данных
+        const teachersWithDisciplines = response.data.map(teacher => ({
+          ...teacher,
+          Disciplines: Array.isArray(teacher.Disciplines)
+            ? teacher.Disciplines
+            : teacher.Disciplines ? JSON.parse(teacher.Disciplines) : []  // Преобразуем строку в массив
+        }));
+        setTeachers(teachersWithDisciplines);
       })
       .catch(error => {
         console.error("Error fetching teachers:", error);
@@ -51,7 +58,7 @@ const TeacherPage = () => {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(response => {
-        setAllDisciplines(response.data);
+        setAllDisciplines(response.data);  // Устанавливаем список всех дисциплин
       })
       .catch(error => {
         console.error("Error fetching disciplines:", error);
@@ -61,9 +68,7 @@ const TeacherPage = () => {
   const handleEditTeacher = (id) => {
     const teacher = teachers.find(t => t.id === id);
     setTeacherName(teacher.FIO);  // Устанавливаем текущее ФИО для редактирования
-
-    // Преобразуем строку дисциплин в массив и устанавливаем для редактирования
-    setSelectedDisciplines(teacher.Disciplines ? teacher.Disciplines.split(', ') : []);
+    setSelectedDisciplines(teacher.Disciplines);  // Устанавливаем выбранные дисциплины
     setEditingTeacherId(id);  // Устанавливаем ID редактируемого преподавателя
   };
 
@@ -75,14 +80,15 @@ const TeacherPage = () => {
       return;
     }
 
-    // Отправляем обновленные данные на сервер, дисциплины в виде строки
+    // Отправляем обновленные данные на сервер
     axios.put(`http://localhost:5000/api/teachers/${editingTeacherId}`, {
       fio: teacherName,  // Обновленное ФИО
-      disciplines: selectedDisciplines.join(', ')  // Обновленные дисциплины как строка
+      disciplines: JSON.stringify(selectedDisciplines)  // Преобразуем массив дисциплин в строку
     }, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(response => {
+        // Обновляем список преподавателей
         const updatedTeachers = teachers.map(teacher =>
           teacher.id === editingTeacherId ? response.data : teacher
         );
@@ -139,8 +145,12 @@ const TeacherPage = () => {
               <TableRow key={teacher.id}>
                 <TableCell>{teacher.FIO}</TableCell>
                 <TableCell>
-                  {teacher.Disciplines && teacher.Disciplines.length > 0
-                    ? teacher.Disciplines.split(', ').join(', ')  // Отображаем дисциплины как строку
+                  {/* Проверяем, является ли teacher.Disciplines массивом */}
+                  {Array.isArray(teacher.Disciplines) && teacher.Disciplines.length > 0
+                    ? teacher.Disciplines.map(id => {
+                        const discipline = allDisciplines.find(d => d.id === id);
+                        return discipline ? discipline.name : '';
+                      }).join(', ') // Если это массив, отображаем через запятую
                     : 'Нет дисциплин'}
                 </TableCell>
                 <TableCell>
@@ -157,11 +167,16 @@ const TeacherPage = () => {
                         <Select
                           multiple
                           value={selectedDisciplines}
-                          onChange={(e) => setSelectedDisciplines(e.target.value)}
-                          renderValue={(selected) => selected.join(', ')}
+                          onChange={(e) => setSelectedDisciplines(e.target.value)}  // Обновление выбранных дисциплин
+                          renderValue={(selected) => {
+                            return selected.map(id => {
+                              const discipline = allDisciplines.find(d => d.id === id);
+                              return discipline ? discipline.name : '';
+                            }).join(', ');
+                          }}
                         >
                           {allDisciplines.map((discipline) => (
-                            <MenuItem key={discipline.id} value={discipline.name}>
+                            <MenuItem key={discipline.id} value={discipline.id}>
                               {discipline.name}
                             </MenuItem>
                           ))}

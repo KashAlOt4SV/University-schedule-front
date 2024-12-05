@@ -42,10 +42,10 @@ const ScheduleTable = ({ schedule, onCellClick, userRole }) => {
   };
 
   // Проверяем, заняты ли преподаватель и группа в выбранной ячейке
-  const isSlotOccupied = (day, time, groupId, teacherId) => {
+  const isSlotOccupied = (day, time, groupId, teacherId, classType) => {
     return schedule.some((entry) => 
       entry.dayOfWeek === day && entry.timeSlot === time && 
-      (entry.groupId === groupId || entry.teacherId === teacherId)
+      (entry.groupId === groupId || entry.teacherId === teacherId) && entry.classType===classType
     );
   };
 
@@ -81,7 +81,7 @@ const ScheduleTable = ({ schedule, onCellClick, userRole }) => {
                 >
                   {entry ? (
                     <>
-                      <div><strong>Дисциплина:</strong> {entry.Discipline?.name || 'Не указана'}</div>
+                      <div><strong>Дисциплина:</strong> {entry.Discipline?.name + (entry.classType ? " (" + entry.classType + ")" : "") || 'Не указана'}</div>
                       <div><strong>Преподаватель:</strong> {entry.Teacher?.FIO || 'Не указан'}</div>
                       <div><strong>Группа:</strong> {entry.Group?.groupName || 'Не указана'}</div>
                     </>
