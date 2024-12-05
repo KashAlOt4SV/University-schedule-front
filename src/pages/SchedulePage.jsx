@@ -20,6 +20,7 @@ const SchedulePage = () => {
   const [selectedScheduleTeacher, setSelectedScheduleTeacher] = useState('');
   const [selectedDiscipline, setSelectedDiscipline] = useState('');
   const [selectedClassType, setSelectedClassType] = useState('');
+  const [teacherDisciplines, setTeacherDisciplines] = useState([]);
 
   const [filterApplied, setFilterApplied] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -120,20 +121,27 @@ const SchedulePage = () => {
     console.log("Selected Group:", selectedScheduleGroup);
     console.log("Selected Discipline:", selectedDiscipline);
     console.log("Selected ClassType:", selectedClassType);
+  
     if (selectedScheduleTeacher) {
       const teacher = teachers.find(t => t.id === selectedScheduleTeacher);
-      if (teacher && teacher.disciplines) {
-        setTeacherDisciplines(teacher.disciplines);
-        console.log(teacherDisciplines) // Получаем дисциплины преподавателя
+      if (teacher && teacher.Disciplines) {
+        // Здесь мы получаем массив дисциплин по ID
+        const teacherDisciplinesData = teacher.Disciplines.map(disciplineId => 
+          disciplines.find(d => d.id === disciplineId) // Сопоставляем ID с полными данными дисциплин
+        );
+        setTeacherDisciplines(teacherDisciplinesData);
       }
     } else {
-      setTeacherDisciplines(disciplines)
-      console.log(teacherDisciplines) ; // Если преподаватель не выбран, показываем все дисциплины
+      setTeacherDisciplines(disciplines); // Если преподаватель не выбран, показываем все дисциплины
     }
-  }, [selectedScheduleTeacher, selectedScheduleGroup, selectedDiscipline]);
+  },  [selectedScheduleTeacher, selectedScheduleGroup, selectedDiscipline, teachers, disciplines]); // Убираем лишние зависимости
+
+  useEffect(() => {
+    console.log("Updated Teacher Disciplines:", teacherDisciplines);
+  }, [teacherDisciplines]); // Логируем состояние teacherDisciplines после его обновления
 
   const handleSave = () => {
-    if (!selectedScheduleGroup || !selectedScheduleTeacher || !selectedDiscipline || !selectedClassType) {
+    if (!(selectedGroup ? selectedGroup : selectedScheduleGroup) || !(selectedTeacher ? selectedTeacher : selectedScheduleTeacher) || !selectedDiscipline || !selectedClassType) {
       setSnackbarMessage('Ошибка: все поля должны быть заполнены.');
       setSnackbarType('error');
       setSnackbarOpen(true);
@@ -144,9 +152,9 @@ const SchedulePage = () => {
     const scheduleData = {
       dayOfWeek: selectedCell.day,
       timeSlot: selectedCell.time,
-      groupId: selectedScheduleGroup,
+      groupId: selectedGroup ? selectedGroup : selectedScheduleGroup,
       disciplineId: selectedDiscipline,
-      teacherId: selectedScheduleTeacher,
+      teacherId: selectedTeacher ? selectedTeacher: selectedScheduleTeacher,
       classType: selectedClassType,
     };
 
@@ -208,7 +216,7 @@ const SchedulePage = () => {
   };
 
   const handleCancelFilter = () => {
-    setSelectedScheduleTeacher('');
+    setSelectedTeacher('');
     setSelectedGroup('');
     setFilterApplied(false);
     setDialogOpen(false);
@@ -253,22 +261,6 @@ const SchedulePage = () => {
     }
   };
 
-const [teacherDisciplines, setTeacherDisciplines] = useState([]);
-
-// При изменении преподавателя, фильтруем дисциплины
-useEffect(() => {
-  if (selectedScheduleTeacher) {
-    const teacher = teachers.find(t => t.id === selectedScheduleTeacher);
-    if (teacher && teacher.disciplines) {
-      setTeacherDisciplines(teacher.disciplines);
-      console.log(teacherDisciplines) // Получаем дисциплины преподавателя
-    }
-  } else {
-    setTeacherDisciplines(disciplines)
-    console.log(teacherDisciplines) ; // Если преподаватель не выбран, показываем все дисциплины
-  }
-}, [selectedScheduleTeacher, teachers, disciplines]);
-
   return (
     <Container>
       <h2>Расписание</h2>
@@ -288,8 +280,10 @@ useEffect(() => {
                 <FormControl fullWidth>
                   <InputLabel>Группа</InputLabel>
                   <Select
-                    value={selectedScheduleGroup}
+                    value={selectedGroup ? selectedGroup : selectedScheduleGroup}
                     onChange={(e) => setSelectedScheduleGroup(e.target.value)}
+                    defaultValue={selectedGroup ? selectedGroup : null}
+                    disabled={selectedGroup !== ''}
                     displayEmpty
                     style={{ marginBottom: '7px' }}
                   >
@@ -301,9 +295,11 @@ useEffect(() => {
                 <FormControl fullWidth>
                   <InputLabel>Преподаватель</InputLabel>
                   <Select
-                    value={selectedScheduleTeacher}
+                    value={selectedTeacher ? selectedTeacher : selectedScheduleTeacher}
                     onChange={(e) => setSelectedScheduleTeacher(e.target.value)}
+                    defaultValue={selectedTeacher ? selectedTeacher : null}
                     displayEmpty
+                    disabled={selectedTeacher !== ''}
                     style={{ marginBottom: '7px' }}
                   >
                     {teachers.map((teacher) => (
@@ -319,7 +315,7 @@ useEffect(() => {
                     displayEmpty
                     style={{ marginBottom: '7px' }}
                   >
-                    {(selectedScheduleTeacher ? teacherDisciplines : disciplines).map((discipline) => (
+                    {(teacherDisciplines && teacherDisciplines.length > 0 ? teacherDisciplines : disciplines).map((discipline) => (
                       <MenuItem key={discipline.id} value={discipline.id}>{discipline.name}</MenuItem>
                     ))}
                   </Select>
