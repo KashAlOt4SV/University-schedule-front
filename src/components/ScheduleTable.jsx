@@ -77,6 +77,7 @@ const ScheduleTable = ({ schedule, onCellClick, userRole }) => {
                       <div><strong>Дисциплина:</strong> {entry.Discipline?.name + (entry.classType ? " (" + entry.classType + ")" : "") || 'Не указана'}</div>
                       <div><strong>Преподаватель:</strong> {entry.Teacher?.FIO || 'Не указан'}</div>
                       <div><strong>Группа:</strong> {entry.Group?.groupName || 'Не указана'}</div>
+                      <div><strong>Аудитория:</strong> {entry.audience || 'Не указана'}</div>
                     </>
                   ) : (
                     <div>Нет занятия</div>

@@ -13,6 +13,10 @@ const SchedulePage = () => {
   const [teachers, setTeachers] = useState([]);
   const [disciplines, setDisciplines] = useState([]);
   const [classTypes] = useState(['Лекция', 'Практическое занятие', 'Лабораторная работа']);
+  const [audiences, setAudiences] = useState([]);
+  const buildings = Array.from({ length: 14 }, (_, index) => (index + 1).toString()); // Список корпусов
+  const [filteredAudiences, setFilteredAudiences] = useState([]); // Фильтрованный список аудиторий
+  
 
   const [selectedGroup, setSelectedGroup] = useState('');
   const [selectedScheduleGroup, setSelectedScheduleGroup] = useState('');
@@ -21,6 +25,8 @@ const SchedulePage = () => {
   const [selectedDiscipline, setSelectedDiscipline] = useState('');
   const [selectedClassType, setSelectedClassType] = useState('');
   const [teacherDisciplines, setTeacherDisciplines] = useState([]);
+  const [selectedAudience, setSelectedAudience] = useState('');
+  const [selectedBuilding, setSelectedBuilding] = useState('');
 
   const [filterApplied, setFilterApplied] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -56,6 +62,52 @@ const SchedulePage = () => {
 
     fetchData();
   }, []);
+
+  // Загружаем аудитории с бэкенда
+  useEffect(() => {
+    const fetchAudiences = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/api/schedule/audience', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        console.log(response.data);
+        setAudiences(response.data);
+      } catch (error) {
+        console.error('Error fetching audiences:', error);
+      }
+    };
+    fetchAudiences();
+  }, [token]);
+
+  // Функция для фильтрации аудиторий по корпусу
+  const filterAudiencesByBuilding = (selectedBuilding) => {
+    const selectedBuildingNumber = selectedBuilding.toString();
+    return audiences.filter((audience) => {
+      const audienceNumber = audience.number_of_audiences.toString();
+      // Фильтруем аудитории, которые начинаются с выбранного корпуса
+      // Если длина номера 4, то это одноцифровой корпус
+      // Если длина номера 5, то это двухзначный корпус
+      return (
+        audienceNumber.startsWith(selectedBuildingNumber) &&
+        (audienceNumber.length === 4 || audienceNumber.length === 5)
+      );
+    });
+  };
+
+  // Обновляем отфильтрованные аудитории при изменении выбранного корпуса
+  useEffect(() => {
+    if (selectedBuilding) {
+      const filtered = filterAudiencesByBuilding(selectedBuilding);
+      setFilteredAudiences(filtered);
+    } else {
+      setFilteredAudiences(audiences); // Если корпус не выбран, показываем все аудитории
+    }
+  }, [selectedBuilding, audiences]);
+
+  // Обработчик изменения выбора корпуса
+  const handleBuildingChange = (event) => {
+    setSelectedBuilding(event.target.value);
+  };
 
   useEffect(() => {
     if (filterApplied) {
@@ -132,6 +184,13 @@ const SchedulePage = () => {
       setSnackbarOpen(true);
       return;
     }
+
+    if (!selectedAudience || !selectedBuilding) {
+      alert('Выберите корпус и аудиторию.');
+      return;
+    }
+
+    console.log(selectedAudience)
   
     const scheduleData = {
       dayOfWeek: selectedCell.day,
@@ -140,6 +199,7 @@ const SchedulePage = () => {
       disciplineId: selectedDiscipline,
       teacherId: selectedTeacher ? selectedTeacher : selectedScheduleTeacher,
       classType: selectedClassType,
+      audience: selectedAudience
     };
   
     if (selectedCell.id) {
@@ -250,6 +310,10 @@ const SchedulePage = () => {
       });
     }
   };
+
+  useEffect(() => {
+    console.log("Updated schedule", schedule);
+  }, [schedule]); // Следим за обновлениями расписания
   
   return (
     <Container>
@@ -323,6 +387,43 @@ const SchedulePage = () => {
                     ))}
                   </Select>
                 </FormControl>
+                <Grid container spacing={2}>
+              <Grid item xs={6}>
+              <FormControl fullWidth>
+                <InputLabel>Корпус</InputLabel>
+                <Select
+                  value={selectedBuilding}
+                  onChange={handleBuildingChange}
+                  displayEmpty
+                >
+                  {buildings.map((building) => (
+                    <MenuItem key={building} value={building}>
+                      Корпус {building}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={6}>
+              <FormControl fullWidth>
+                <InputLabel>Аудитория</InputLabel>
+                <Select
+                  value={selectedAudience}
+                  onChange={(e) => setSelectedAudience(e.target.value)}
+                  displayEmpty
+                  disabled={!selectedBuilding} // Блокируем, если корпус не выбран
+                >
+                  {/* Здесь мы фильтруем аудитории на основе выбранного корпуса */}
+                  {filteredAudiences.map((audience) => (
+                    <MenuItem key={audience.id} value={audience.number_of_audiences}>
+                      {audience.number_of_audiences}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+          </Grid>                
               </DialogContent>
               <DialogActions>
                 <Button onClick={handleScheduleCancel} color="secondary">Отменить</Button>
